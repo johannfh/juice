@@ -1,4 +1,4 @@
-# Game Name
+# Devil's Kitchen
 
 **Team Members:** Manan
 

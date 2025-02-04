@@ -1,4 +1,4 @@
-# Game Name: Journey to Eden
+# Journey to Eden
 
 **Team Members:** Just me, Moses (Game Dev WildFlowers).
 

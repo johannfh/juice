@@ -1,4 +1,4 @@
-# Game Name
+# Stickmania
 
 **Team Members:** Owen Goo & Sendevan Mayan
 

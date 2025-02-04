@@ -1,5 +1,4 @@
-# Game Name 
-Runeworks
+# Runeworks
 
 **Team Members:** Rushil Chopra, Ruiyu Liu, Adam Xu, Yufan Wang
 

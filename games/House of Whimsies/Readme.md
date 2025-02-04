@@ -1,4 +1,4 @@
-GAME PITCH: "House of Whimsies: The Enchanted Repair
+# House of Whimsies: The Enchanted Repair
 
 "HOW WOULD YOU PITCH YOUR GAME IN ONE LINE?
 

@@ -1,4 +1,4 @@
-# Game Name
+# ranga-hardcore
 
 **Team Members:** FX54
 

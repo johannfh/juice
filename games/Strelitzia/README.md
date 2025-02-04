@@ -1,5 +1,5 @@
-# Game Name
-Strelitzia
+# Strelitzia
+
 **Team Members:** [Andy]
 
 **How would you pitch your game in one line?**

@@ -1,3 +1,5 @@
+# Meow-treats!
+
 **Team Members:** Mansukh Kaur
 
 **How would you pitch your game in one line?**

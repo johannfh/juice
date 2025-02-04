@@ -1,4 +1,4 @@
-# Game Name
+# Land-Shark
 
 **Team Members:** [Sarah Ngai]
 

@@ -1,5 +1,4 @@
-
-# Eclipse Warrior 
+# Eclipse Warrior
 
 **Team Members:** Abdul Moiz
 

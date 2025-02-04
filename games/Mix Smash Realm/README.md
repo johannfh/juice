@@ -1,4 +1,4 @@
-# Game: Mix Smash Realm
+# Mix Smash Realm
 
 **Team Members:** Mohit Peddysetty, Surya Pottangi
 

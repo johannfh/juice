@@ -1,4 +1,3 @@
-# Game Name
 # Grabino
 
 **Team Members:** Wyatt B.

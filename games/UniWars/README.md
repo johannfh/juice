@@ -1,4 +1,4 @@
-# Game Name
+# UniWars
 
 **Team Members:** Akhil Sharma (@ictinus0222)
 

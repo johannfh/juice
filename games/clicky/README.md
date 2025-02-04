@@ -1,4 +1,4 @@
-# Game Name
+# clicky
 
 **Team Members:** Daniel Jin
 

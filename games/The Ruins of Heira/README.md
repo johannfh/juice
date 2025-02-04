@@ -1,5 +1,4 @@
-# Game Name 
-The Ruins of Heira: a 2.5D open-world exploration game
+# The Ruins of Heira: a 2.5D open-world exploration game
 
 **Team Members:** Mohammad Mudhaffar Al Ameri, Tony Deng
 

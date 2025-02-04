@@ -1,5 +1,4 @@
-
-**Stormlightarchive**
+# Stormlightarchive
 
 **Team Members:** ![AdoniasYoseph](href=https://github.com/AdoniasYoseph) 
                   ![tibebesm](href=https://github.com/tibebesm)

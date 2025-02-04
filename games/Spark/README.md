@@ -1,4 +1,4 @@
-# Introducing: Spark ✨
+# Spark ✨
 
 ### **How would you pitch your game in one line?**
 

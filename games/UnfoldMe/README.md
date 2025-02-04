@@ -1,4 +1,4 @@
-# Game Name
+# UnfoldMe
 
 **Team Members:** Darren Su, Eddie Bian, Bianca Bian
 

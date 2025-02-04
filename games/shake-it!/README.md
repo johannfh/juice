@@ -1,4 +1,4 @@
-# Game Name
+# shake-it!
 
 **Team Members:** Kai Pereira
 

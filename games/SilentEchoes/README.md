@@ -1,5 +1,4 @@
-# Game Name
-**Silent Echoes**
+# Silent Echoes
 
 **Team Members:** 
 

@@ -1,5 +1,4 @@
-# Game Name
-The Climb
+# The Climb
 
 **Team Members:** Yashas Singh
 

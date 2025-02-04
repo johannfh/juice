@@ -1,4 +1,4 @@
-## Split Horizon
+# Split Horizon
 
 Team Members: Zoya Hussain & John Tan-Aristy (@zsh and @john)
 

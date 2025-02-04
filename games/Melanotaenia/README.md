@@ -1,4 +1,4 @@
-Melanotaenia
+# Melanotaenia
 
 **Team Members:** Abigail Loken, Damien Jennings, Carol Hercules, Diego Sanchez-Rivera
 

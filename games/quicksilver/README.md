@@ -1,4 +1,4 @@
-# Game Name
+# quicksilver
 
 **Team Members:** Kevin Xie
 

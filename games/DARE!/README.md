@@ -1,4 +1,4 @@
-# Game Name
+# DARE!
 
 **Team Members:** [Madhav Garg, Ziyu Jin. Joey Wang, Leo Wilson]
 
