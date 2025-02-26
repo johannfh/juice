@@ -5,3 +5,4 @@ export { default as base } from './base';
 export { signupsTable } from './signups';
 export { juiceStretchesTable } from './juiceStretches';
 export { omgMomentsTable } from './omgMoments';
+export { shipsTable } from './ships';
