@@ -1108,12 +1108,18 @@ export default function MainView({
 
   // Add this helper function near the top of MainView component
   const getTamagotchiDay = (startDate) => {
+    // Try to get the current day from localStorage first
+    const storedCurrentDay = localStorage.getItem('tamagotchiCurrentDay');
+    if (storedCurrentDay) {
+      return parseInt(storedCurrentDay, 10);
+    }
+    
     if (!startDate) return 1;
+    
+    // Fallback to calculation
     const start = new Date(startDate);
     const now = new Date();
-    // Calculate exact hours since start
     const diffHours = (now - start) / (1000 * 60 * 60);
-    // Only increment day count after a full 24 hours
     return Math.floor(diffHours / 24) + 1;
   };
 
@@ -1365,20 +1371,16 @@ export default function MainView({
 
   // Add this function after getRemainingHours
   const getMessage = (userData) => {
-    if (!userData?.Tamagotchi?.[0]) return '';
-    
-    const { hoursNeeded, hoursLeft } = getRemainingHours(userData);
-    const daysLeft = 10 - getTamagotchiDay(userData?.Tamagotchi?.[0]?.startDate);
-
-    const daysLeftNoun = pluralize(daysLeft, "day", "days");
-    const hoursLeftNoun = pluralize(hoursLeft, "hour", "hours");
-    const hoursNeededNoun = pluralize(hoursNeeded, "hour", "hours");
-    
-    if (hoursNeeded > 0) {
-      return `i'm hungry! feed me ${hoursNeeded} more ${hoursNeededNoun} of juice or jungle within the next ${hoursLeft} ${hoursLeftNoun} or I'll perish. if you keep me alive ${daysLeft} more ${daysLeftNoun}, Hack Club will mail me to you (a real life tamagotchi)`;
-    } else {
-      return `I'm full for the next ${hoursLeft} ${hoursLeftNoun}. ty for feeding me. just ${daysLeft} more ${daysLeftNoun} of feeding me and then I'll come to you in the mail as a tamagotchi`;
+    if (!userData?.Tamagotchi?.length) {
+      return 'Click to hatch a Tamagotchi!';
     }
+    
+    const tamagotchi = userData.Tamagotchi[0];
+    if (!tamagotchi.isAlive) {
+      return 'Your Tamagotchi died! Click to try again.';
+    }
+    
+    return 'Keep me alive by giving me more juice & jungle fruits yum yum yum';
   };
 
   // Add these new state variables with the other state declarations
@@ -1483,6 +1485,428 @@ export default function MainView({
     x: 0,
     y: 0
   });
+
+  // Add this state variable with the other state declarations
+  const [lastSyncTime, setLastSyncTime] = React.useState(0);
+
+  // Update the syncTamagotchiDays function to track last sync time
+  const syncTamagotchiDays = async () => {
+    if (!isLoggedIn || !userData?.Tamagotchi?.length) return;
+    
+    const now = Date.now();
+    // Only sync if it's been more than 10 minutes since last sync
+    if (now - lastSyncTime < 600000) { // 600000ms = 10 minutes
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/sync-tamagotchi-days', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to sync Tamagotchi days');
+      }
+
+      const data = await response.json();
+      
+      // Update userData with the streak days
+      setUserData(prevData => ({
+        ...prevData,
+        Tamagotchi: [
+          {
+            ...prevData.Tamagotchi[0],
+            streakNumber: data.streakDays
+          }
+        ]
+      }));
+      
+      // Store today's hours and OMG moments in localStorage
+      localStorage.setItem('tamagotchiTodayHours', JSON.stringify(data.todayHours));
+      localStorage.setItem('tamagotchiDayOmgMoments', JSON.stringify(data.dayOmgMoments));
+      localStorage.setItem('tamagotchiDaysWithOmgMoments', JSON.stringify(data.daysWithOmgMoments));
+      localStorage.setItem('tamagotchiCurrentDay', data.currentDay.toString());
+      
+      // Update last sync time
+      setLastSyncTime(now);
+      
+      console.log('Tamagotchi days synced:', data);
+    } catch (error) {
+      console.error('Error syncing Tamagotchi days:', error);
+    }
+  };
+
+  // Update the useEffect that handles syncing
+  React.useEffect(() => {
+    // ... existing code ...
+    
+    // Sync Tamagotchi days when component mounts and user is logged in
+    if (isLoggedIn && userData?.Tamagotchi?.length) {
+      syncTamagotchiDays();
+    }
+    
+    // Set up a timer to sync Tamagotchi days every 10 minutes
+    const syncInterval = setInterval(() => {
+      if (isLoggedIn && userData?.Tamagotchi?.length) {
+        syncTamagotchiDays();
+      }
+    }, 600000); // 600000ms = 10 minutes
+    
+    return () => clearInterval(syncInterval);
+  }, [isLoggedIn, userData?.Tamagotchi]);
+
+  // Add a function to get OMG moments for a specific day
+  const getDayOmgMoments = (dayNumber) => {
+    try {
+      const dayOmgMomentsString = localStorage.getItem('tamagotchiDayOmgMoments');
+      if (dayOmgMomentsString) {
+        const dayOmgMoments = JSON.parse(dayOmgMomentsString);
+        const dayKey = `Day${dayNumber}`;
+        return dayOmgMoments[dayKey] || [];
+      }
+    } catch (e) {
+      console.error('Error parsing day OMG moments:', e);
+    }
+    return [];
+  };
+
+  // Add a function to check if a day has OMG moments
+  const dayHasOmgMoments = (dayNumber) => {
+    try {
+      const daysWithOmgMomentsString = localStorage.getItem('tamagotchiDaysWithOmgMoments');
+      if (daysWithOmgMomentsString) {
+        const daysWithOmgMoments = JSON.parse(daysWithOmgMomentsString);
+        return daysWithOmgMoments.includes(dayNumber);
+      }
+    } catch (e) {
+      console.error('Error parsing days with OMG moments:', e);
+    }
+    return false;
+  };
+
+  // Add this to the useEffect that loads user data
+  React.useEffect(() => {
+    // ... existing code ...
+    
+    // Sync Tamagotchi days when component mounts and user is logged in
+    if (isLoggedIn && userData?.Tamagotchi?.length) {
+      syncTamagotchiDays();
+    }
+    
+    // Set up a timer to sync Tamagotchi days periodically (every 10 minutes)
+    const syncInterval = setInterval(() => {
+      if (isLoggedIn && userData?.Tamagotchi?.length) {
+        syncTamagotchiDays();
+      }
+    }, 10 * 60 * 1000); // Every 10 minutes
+    
+    return () => clearInterval(syncInterval);
+  }, [isLoggedIn, userData?.Tamagotchi]);
+
+  // Add a function to get today's progress
+  const getTodayProgress = () => {
+    // Try to get today's hours from localStorage
+    try {
+      const todayHoursString = localStorage.getItem('tamagotchiTodayHours');
+      if (todayHoursString) {
+        const todayHours = JSON.parse(todayHoursString);
+        return `${todayHours.total.toFixed(1)} / 2.0 hours`;
+      }
+    } catch (e) {
+      console.error('Error parsing today hours:', e);
+    }
+    
+    return "0.0 / 2.0 hours";
+  };
+
+  // Add a function to get the current streak
+  const getTamagotchiStreak = () => {
+    if (userData?.Tamagotchi?.[0]?.streakNumber) {
+      return userData.Tamagotchi[0].streakNumber;
+    }
+    return 0;
+  };
+
+  // Add these new state variables
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [dayMoments, setDayMoments] = useState([]);
+  const [videoKey, setVideoKey] = useState(0);
+  const [currentMomentIndex, setCurrentMomentIndex] = useState(0);
+  const [selectedMoment, setSelectedMoment] = useState(null);
+
+  // Add a function to get moments for a specific day
+  const getDayMoments = (dayNumber) => {
+    if (!userData?.juiceStretches && !userData?.jungleStretches) return [];
+    
+    const tamagotchiStartDate = userData?.Tamagotchi?.[0]?.startDate;
+    if (!tamagotchiStartDate) return [];
+    
+    const dayStart = new Date(tamagotchiStartDate);
+    dayStart.setDate(dayStart.getDate() + (dayNumber - 1));
+    dayStart.setHours(0, 0, 0, 0);
+    
+    const dayEnd = new Date(tamagotchiStartDate);
+    dayEnd.setDate(dayEnd.getDate() + dayNumber);
+    dayEnd.setHours(0, 0, 0, 0);
+    
+    // Helper function to process stretches
+    const processStretches = (stretches, type) => {
+      if (!stretches) return [];
+      return stretches.reduce((acc, stretch) => {
+        if (!stretch.endTime) return acc;
+        
+        const stretchEnd = new Date(stretch.endTime);
+        if (stretchEnd >= dayStart && stretchEnd < dayEnd && stretch.omgMoments && stretch.omgMoments.length > 0) {
+          // Create a moment object for each omgMoment in the stretch
+          const stretchMoments = stretch.omgMoments.map((_, index) => ({
+            id: stretch.ID + "-" + index,
+            description: stretch["description (from omgMoments)"]?.[index] || "",
+            video: stretch["video (from omgMoments)"]?.[index] || "",
+            created_at: stretch.endTime,
+            stretchReview: stretch.Review?.[0] || "Pending",
+            hours: Math.round((stretch.timeWorkedSeconds / 3600) * 10) / 10,
+            type: type // Add type to distinguish between juice and jungle moments
+          }));
+          return [...acc, ...stretchMoments];
+        }
+        return acc;
+      }, []);
+    };
+    
+    // Get moments from both juice and jungle stretches
+    const juiceMoments = processStretches(userData?.juiceStretches, 'juice');
+    const jungleMoments = processStretches(userData?.jungleStretches, 'jungle');
+    
+    // Combine and sort all moments by creation time
+    return [...juiceMoments, ...jungleMoments].sort((a, b) => 
+      new Date(a.created_at) - new Date(b.created_at)
+    );
+  };
+
+  // Add a function to get total hours for a day
+  const getDayHours = (dayNumber) => {
+    const moments = getDayMoments(dayNumber);
+    return moments.reduce((total, moment) => total + (moment.hours || 0), 0).toFixed(1);
+  };
+
+  // Add handlers for moment navigation
+  const handleMomentClick = (moment) => {
+    const index = dayMoments.findIndex(m => m.id === moment.id);
+    setCurrentMomentIndex(index);
+    setSelectedMoment(moment);
+  };
+
+  const closePopup = () => {
+    setSelectedMoment(null);
+  };
+
+  const navigateMoments = (direction) => {
+    const newIndex = currentMomentIndex + direction;
+    
+    // Check bounds
+    if (newIndex >= 0 && newIndex < dayMoments.length) {
+      setCurrentMomentIndex(newIndex);
+      setSelectedMoment(dayMoments[newIndex]);
+      setVideoKey(prev => prev + 1);
+    }
+  };
+
+  // Add this popup component for displaying moments
+  const MomentPopup = ({ selectedMoment, closePopup, navigateMoments, currentMomentIndex, dayMoments }) => {
+    return (
+      <div style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 8,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        zIndex: 1000,
+        width: '90%',
+        maxWidth: 500,
+        maxHeight: '80vh',
+        overflow: 'auto'
+      }}>
+        {selectedMoment.video && (
+          <video
+            key={selectedMoment.video}
+            controls
+            style={{ width: '100%', marginBottom: 10 }}
+            src={selectedMoment.video}
+          />
+        )}
+        <div style={{ flex: 1 }}>
+          <p>{selectedMoment.description}</p>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: 10,
+            marginBottom: 10,
+            fontSize: 13,
+            opacity: 0.6
+          }}>
+            <span>{new Date(selectedMoment.created_at).toLocaleString()}</span>
+            <span>Duration: {selectedMoment.hours} hours</span>
+          </div>
+          <div style={{ 
+            marginTop: 10,
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <button 
+              onClick={() => navigateMoments(-1)}
+              disabled={currentMomentIndex === 0}
+              style={{ opacity: currentMomentIndex === 0 ? 0.5 : 1 }}
+            >
+              ← Prev
+            </button>
+            <button onClick={closePopup}>
+              Close
+            </button>
+            <button 
+              onClick={() => navigateMoments(1)}
+              disabled={currentMomentIndex === dayMoments.length - 1}
+              style={{ opacity: currentMomentIndex === dayMoments.length - 1 ? 0.5 : 1 }}
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Add this component for displaying the day's moments
+  const DayMomentsPopup = ({ dayNumber, moments, onClose, onMomentClick }) => {
+    return (
+      <div style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 8,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        zIndex: 1000,
+        minWidth: 300,
+        maxHeight: '80vh',
+        overflow: 'auto'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16
+        }}>
+          <h3 style={{ margin: 0 }}>Day {dayNumber} OMG Moments</h3>
+          <button onClick={onClose}>×</button>
+        </div>
+        
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 8,
+          justifyContent: 'center'
+        }}>
+          {moments.map((moment) => {
+            let backgroundColor;
+            let strokeColor;
+            
+            // First determine review status colors
+            if (moment.stretchReview === "Accepted") {
+              backgroundColor = moment.type === 'jungle' ? "#4CAF50" : "#2196F3"; // Green for jungle, Blue for juice
+              strokeColor = moment.type === 'jungle' ? "#90EE90" : "#90CAF9";
+            } else if (moment.stretchReview === "Rejected") {
+              backgroundColor = "red";
+              strokeColor = "#FFB6B6";
+            } else {
+              backgroundColor = "orange";
+              strokeColor = "#FFD580";
+            }
+
+            return (
+              <div
+                key={moment.id}
+                onClick={() => onMomentClick(moment)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: backgroundColor,
+                  borderRadius: "4px",
+                  width: "40px",
+                  height: "40px",
+                  cursor: "pointer",
+                  position: "relative",
+                  boxShadow: `
+                    inset 0 0 0 1px ${strokeColor},
+                    inset 2px 2px 4px rgba(0, 0, 0, 0.05)
+                  `,
+                  transition: "all 0.2s ease",
+                  transform: "scale(1)"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.1)";
+                  e.currentTarget.style.filter = "brightness(1.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.filter = "brightness(1)";
+                }}
+              >
+                <span style={{
+                  fontSize: '10px',
+                  color: 'white',
+                  textShadow: '0px 0px 2px rgba(0,0,0,0.5)',
+                  fontWeight: 'bold'
+                }}>
+                  {moment.hours}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Update the commit graph rendering to include the popups
+  {/* Commit graph visualization */}
+
+
+  {/* Add the popups */}
+  {selectedDay && (
+    <DayMomentsPopup
+      dayNumber={selectedDay}
+      moments={dayMoments}
+      onClose={() => {
+        setSelectedDay(null);
+        setDayMoments([]);
+      }}
+      onMomentClick={handleMomentClick}
+    />
+  )}
+
+  {selectedMoment && (
+    <MomentPopup
+      selectedMoment={selectedMoment}
+      closePopup={closePopup}
+      navigateMoments={navigateMoments}
+      currentMomentIndex={currentMomentIndex}
+      dayMoments={dayMoments}
+    />
+  )}
 
   return (
     <div
@@ -2017,15 +2441,16 @@ export default function MainView({
               <div
                 style={{
                   position: 'absolute',
-                  top: '-200px',
+                  top: '-246px',
                   padding: 8,
+                  overflow: "hidden",
                   width: 196,
                   border: '1px solid #000',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: isHovered ? 'space-between' : 'center',
-                  height: 196,
+                  height: 232,
                   backgroundColor: '#fff',
                   borderRadius: isHovered ? '8px' : '1000px',
                   transform: `
@@ -2190,6 +2615,116 @@ export default function MainView({
                 >
                   {getMessage(userData)}
                 </p>
+
+                {/* Commit graph visualization */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(10, 1fr)',
+                  gap: 2,
+                  width: '216px',
+                  padding: '0 16px',
+                  opacity: isHovered ? 1 : 0,
+                  height: isHovered ? '16px' : 0,
+                  transition: `
+                    opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${isHovered ? '0.5s' : '0s'},
+                    height 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${isHovered ? '0.5s' : '0s'}
+                  `
+                }}>
+                  {Array.from({ length: 10 }, (_, i) => {
+                    const dayNumber = i + 1;
+                    const currentDay = getTamagotchiDay(userData?.Tamagotchi?.[0]?.startDate);
+                    const hasActivity = dayNumber <= currentDay;
+                    const hasOmgMoments = dayHasOmgMoments(dayNumber);
+                    const isToday = dayNumber === currentDay;
+                    const dayHours = hasOmgMoments ? getDayHours(dayNumber) : "0.0";
+                    
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          width: '16px',
+                          height: "16px",
+                          aspectRatio: '1',
+                          backgroundColor: hasOmgMoments ? '#4CAF50' : (hasActivity ? '#E0E0E0' : '#F5F5F5'),
+                          borderRadius: 2,
+                          border: isToday ? '2px solid #1E88E5' : '1px solid rgba(0,0,0,0.1)',
+                          transition: 'transform 0.2s ease, filter 0.2s ease',
+                          cursor: hasOmgMoments ? 'pointer' : 'default',
+                          position: 'relative',
+                        }}
+                        onClick={() => {
+                          if (hasOmgMoments) {
+                            setSelectedDay(dayNumber);
+                            setDayMoments(getDayMoments(dayNumber));
+                          }
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.2)';
+                          e.currentTarget.style.filter = 'brightness(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                          e.currentTarget.style.filter = 'brightness(1)';
+                        }}
+                      >
+                        {hasOmgMoments && (
+                          <span style={{
+                            fontSize: '8px',
+                            color: 'white',
+                            textShadow: '0px 0px 2px rgba(0,0,0,0.5)',
+                            fontWeight: 'bold'
+                          }}>
+                            {dayHours}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p
+                  style={{
+                    fontSize: 12,
+                    height: isHovered ? 24 : 0,
+                    opacity: isHovered ? 1 : 0,
+                    marginTop: isHovered ? 4 : 0,
+                    transition: `
+                  opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${
+                    isHovered ? '0.5s' : '0s'
+                  },
+                  height 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${
+                    isHovered ? '0.5s' : '0s'
+                  },
+                  margin-top 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${
+                    isHovered ? '0.5s' : '0s'
+                  }
+                `,
+                  }}
+                >
+                  Today's progress: {getTodayProgress()}
+                </p>
+
+                {/* <p
+                  style={{
+                    fontSize: 12,
+                    height: isHovered ? 24 : 0,
+                    opacity: isHovered ? 1 : 0,
+                    marginTop: isHovered ? 4 : 0,
+                    transition: `
+                  opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${
+                    isHovered ? '0.5s' : '0s'
+                  },
+                  height 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${
+                    isHovered ? '0.5s' : '0s'
+                  },
+                  margin-top 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${
+                    isHovered ? '0.5s' : '0s'
+                  }
+                `,
+                  }}
+                >
+                  Current streak: {getTamagotchiStreak()} days
+                </p> */}
               </div>
             ) : (
               <div
@@ -2912,7 +3447,9 @@ export default function MainView({
         </div>
 
         <div
-          style={{ position: 'absolute', top: TOP_BAR_HEIGHT + 8, right: 8 }}
+          style={{ position: 'absolute',
+            zIndex: 101,
+            top: TOP_BAR_HEIGHT + 8, right: 8 }}
         >
           {isLoggedIn &&
             !userData?.achievements?.includes('pr_submitted') &&

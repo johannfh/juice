@@ -333,6 +333,16 @@ export default function MenuWindow({
                 {moments.map((moment) => {
                   let backgroundColor;
                   let strokeColor;
+                  let hours = 0;
+                  
+                  // Find the corresponding stretch for this moment
+                  const stretch = userData?.juiceStretches?.find(s => 
+                    s.omgMoments?.some((_, idx) => s.ID + "-" + idx === moment.id)
+                  );
+                  
+                  if (stretch) {
+                    hours = Math.round((stretch.timeWorkedSeconds / 3600) * 10) / 10;
+                  }
                   
                   if (moment.stretchReview === "Accepted") {
                     backgroundColor = "green";
@@ -383,7 +393,16 @@ export default function MenuWindow({
                           inset 2px 2px 4px rgba(0, 0, 0, 0.05)
                         `;
                       }}
-                    ></div>
+                    >
+                      <span style={{
+                        fontSize: '8px',
+                        color: 'white',
+                        textShadow: '0px 0px 2px rgba(0,0,0,0.5)',
+                        fontWeight: 'bold'
+                      }}>
+                        {hours}
+                      </span>
+                    </div>
                   );
                 })}
               </div>
@@ -430,13 +449,24 @@ export default function MenuWindow({
 
           <div style={{ flex: 1 }}>
             <p>{selectedMoment.description}</p>
-            <p style={{ 
-              paddingTop: 10,
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: 10,
+              marginBottom: 10,
               fontSize: 13,
               opacity: 0.6
             }}>
-              {new Date(selectedMoment.created_at).toLocaleString()}
-            </p>
+              <span>{new Date(selectedMoment.created_at).toLocaleString()}</span>
+              {userData?.juiceStretches?.find(s => 
+                s.omgMoments?.some((_, idx) => s.ID + "-" + idx === selectedMoment.id)
+              ) && (
+                <span>Duration: {Math.round((userData.juiceStretches.find(s => 
+                  s.omgMoments?.some((_, idx) => s.ID + "-" + idx === selectedMoment.id)
+                ).timeWorkedSeconds / 3600) * 10) / 10} hours</span>
+              )}
+            </div>
             <div style={{ 
               marginTop: 10,
               display: 'flex',

@@ -138,4 +138,19 @@ export default async function handler(req, res) {
   //   console.error('Error fetching user data:', error);
   //   res.status(500).json({ message: 'Error fetching user data' });
   // }
+
+  const tamagotchiRecords = await base('Tamagotchi').select({
+    filterByFormula: `{user} = '${email}'`
+  }).firstPage();
+
+  const tamagotchi = tamagotchiRecords.map(record => ({
+    id: record.id,
+    startDate: record.fields.startDate,
+    isAlive: record.fields.isAlive,
+    streakNumber: record.fields.streakNumber,
+    streakData: record.fields.streakData || JSON.stringify({
+      currentDay: 1,
+      dayData: {}
+    })
+  }));
 } 
