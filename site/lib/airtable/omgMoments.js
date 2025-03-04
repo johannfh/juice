@@ -6,7 +6,7 @@ import base from './base';
  * @typedef {FieldSet & {
  * description: string;
  * video?: string;
- * email?: string;
+ * email: string;
  * juiceStretches?: string[];
  * Review: import('./juiceStretches').ReviewStatus;
  * jungleStretches?: string[];

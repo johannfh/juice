@@ -26,7 +26,7 @@ export const rejected = "Rejected";
  * Signups: string[];
  * pauseTimeStart?: string;
  * totalPauseTimeSeconds: number;
- * isCancelled: boolean;
+ * isCanceled: boolean;
  * timeWorkedSeconds: number;
  * timeWorkedHours: number;
  * ["Slack ID"]?: string;

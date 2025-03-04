@@ -1,41 +1,47 @@
-import Airtable from 'airtable';
+import { signupsTable } from "@/lib/airtable";
+import { pr_submitted } from "@/lib/airtable/signups";
 
-// Initialize Airtable
-const base = new Airtable({
-  apiKey: process.env.AIRTABLE_API_KEY
-}).base(process.env.AIRTABLE_BASE_ID);
-
+/** @type {import('next').NextApiHandler} */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    return res.status(405).json({
+      success: false,
+      message: 'Method not allowed',
+    });
   }
 
   try {
     const { token, prLink } = req.body;
 
     if (!token || !prLink) {
-      return res.status(400).json({ message: 'Token and PR link are required' });
+      return res.status(400).json({
+        success: false,
+        message: 'Token and PR link are required',
+      });
     }
 
     // Find user by token
-    const records = await base("Signups").select({
+    const records = await signupsTable.select({
       filterByFormula: `{token} = '${token}'`,
-      maxRecords: 1
+      maxRecords: 1,
     }).firstPage();
 
     if (records.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
     }
 
     const record = records[0];
     
     // Update the user record with PR link and achievement
-    const updatedRecord = await base("Signups").update([
+    const updatedRecord = await signupsTable.update([
       {
         id: record.id,
         fields: {
           game_pr: prLink,
-          achievements: [...(record?.fields?.achievements || []), 'pr_submitted']
+          achievements: [...(record?.fields?.achievements || []), pr_submitted]
         }
       }
     ]);

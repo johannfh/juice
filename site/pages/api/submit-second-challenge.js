@@ -1,37 +1,44 @@
-import Airtable from 'airtable';
+import { omgMomentsTable, shipsTable, signupsTable } from "@/lib/airtable";
+import { base_mechanic } from "@/lib/airtable/ships";
+import { poc_submitted } from "@/lib/airtable/signups";
 
-// Initialize Airtable
-const base = new Airtable({
-  apiKey: process.env.AIRTABLE_API_KEY
-}).base(process.env.AIRTABLE_BASE_ID);
-
+/** @type {import('next').NextApiHandler} */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    return res.status(405).json({
+      success: false,
+      message: 'Method not allowed',
+    });
   }
 
   try {
     const { token, itchLink, platforms } = req.body;
 
     if (!token || !itchLink || !platforms?.length) {
-      return res.status(400).json({ message: 'Token, itch.io link, and platforms are required' });
+      return res.status(400).json({
+        success: false,
+        message: 'Token, itch.io link, and platforms are required',
+      });
     }
 
     // First find user by token
-    const userRecords = await base('Signups').select({
+    const userRecords = await signupsTable.select({
       filterByFormula: `{token} = '${token}'`,
-      maxRecords: 1
+      maxRecords: 1,
     }).firstPage();
 
     if (userRecords.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
     }
 
     const userRecord = userRecords[0];
     const userEmail = userRecord.fields.email;
 
     // Fetch user's OMG moments using email
-    const omgMoments = await base('omgMoments').select({
+    const omgMoments = await omgMomentsTable.select({
       filterByFormula: `{email} = '${userEmail}'`,
       sort: [{ field: 'created_at', direction: 'desc' }]
     }).all();
@@ -42,26 +49,26 @@ export default async function handler(req, res) {
     console.log('OMG moment IDs:', omgMoments.map(record => record.id));
 
     // Create new record in Ships table
-    const shipRecord = await base('Ships').create([
+    const shipRecord = await shipsTable.create([
       {
         fields: {
           Link: itchLink,
           Platforms: platforms,
           user: [userRecord.id],
-          Type: 'base-mechanic',
-          omgMomentsThatWentIntoThis: omgMoments.map(record => record.id)
+          Type: base_mechanic,
+          omgMomentsThatWentIntoThis: omgMoments.map(record => record.id),
         }
       }
     ]);
 
     // Add poc_submitted achievement
-    await base('Signups').update([
+    await signupsTable.update([
       {
         id: userRecord.id,
         fields: {
-          achievements: [...(userRecord.fields.achievements || []), 'poc_submitted']
-        }
-      }
+          achievements: [...(userRecord.fields.achievements || []), poc_submitted],
+        },
+      },
     ]);
 
     return res.status(200).json({ 
@@ -75,7 +82,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ 
       success: false,
       message: error.message || 'Error processing ship submission',
-      error: error.error || 'UNKNOWN_ERROR'
+      error: error.error || 'UNKNOWN_ERROR',
     });
   }
 } 

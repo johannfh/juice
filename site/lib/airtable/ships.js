@@ -32,6 +32,7 @@ export const linux = "Linux";
  * doesLinkWork: boolean;
  * gameName?: string;
  * gameImage?: string;
+ * omgMomentsThatWentIntoThis?: string[];
  * }} ShipsFieldSet
  */
 

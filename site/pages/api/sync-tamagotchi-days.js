@@ -1,19 +1,19 @@
-import Airtable from 'airtable';
+import { juiceStretchesTable, omgMomentsTable, signupsTable, tamagotchiTable } from '@/lib/airtable';
 
-const base = new Airtable({apiKey: process.env.AIRTABLE_API_KEY}).base(process.env.AIRTABLE_BASE_ID);
-
+/** @type {import('next').NextApiHandler} */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
+    /** @type {{ token: string; }} */
     const { token } = req.body;
     
     // Get user's record from Signups table
-    const signupRecords = await base('Signups').select({
+    const signupRecords = await signupsTable.select({
       filterByFormula: `{token} = '${token}'`,
-      maxRecords: 1
+      maxRecords: 1,
     }).firstPage();
 
     if (!signupRecords || signupRecords.length === 0) {
@@ -24,9 +24,9 @@ export default async function handler(req, res) {
     const userEmail = signupRecord.fields.email;
 
     // Get user's Tamagotchi
-    const tamagotchiRecords = await base('Tamagotchi').select({
+    const tamagotchiRecords = await tamagotchiTable.select({
       filterByFormula: `{user} = '${userEmail}'`,
-      maxRecords: 1
+      maxRecords: 1,
     }).firstPage();
 
     if (!tamagotchiRecords || tamagotchiRecords.length === 0) {
@@ -41,17 +41,17 @@ export default async function handler(req, res) {
     const dayNumber = Math.floor((now - startDate) / (24 * 60 * 60 * 1000)) + 1;
     
     // Get all stretches (both juice and jungle)
-    const juiceStretches = await base('juiceStretches').select({
-      filterByFormula: `AND({email (from Signups)} = '${userEmail}', NOT({isCanceled}))`
+    const juiceStretches = await juiceStretchesTable.select({
+      filterByFormula: `AND({email (from Signups)} = '${userEmail}', NOT({isCanceled}))`,
     }).all();
     
     const jungleStretches = await base('jungleStretches').select({
-      filterByFormula: `AND({email (from Signups)} = '${userEmail}', NOT({isCanceled}))`
+      filterByFormula: `AND({email (from Signups)} = '${userEmail}', NOT({isCanceled}))`,
     }).all();
     
     // Get all OMG moments for this user
-    const omgMoments = await base('omgMoments').select({
-      filterByFormula: `{email} = '${userEmail}'`
+    const omgMoments = await omgMomentsTable.select({
+      filterByFormula: `{email} = '${userEmail}'`,
     }).all();
     
     // Calculate total hours for today
@@ -100,7 +100,9 @@ export default async function handler(req, res) {
     const todayTotalHours = todayJuiceHours + todayJungleHours;
     
     // Organize OMG moments by day
+    /** @type {Record<string, string[]>} */
     const dayOmgMoments = {};
+    /** @type {Set<number>} */
     const daysWithOmgMoments = new Set();
     
     // Initialize day data structure for up to 10 days
@@ -160,8 +162,11 @@ export default async function handler(req, res) {
     }
     
     // Prepare update fields
+    /**
+     * @type {import('@/lib/airtable/tamagotchi').TamagotchiFieldSet}
+     */
     const updateFields = {
-      streakNumber: maxStreak // Use the streak of consecutive days with OMG moments
+      streakNumber: maxStreak, // Use the streak of consecutive days with OMG moments
     };
     
     // Add OMG moments to day fields
@@ -173,7 +178,7 @@ export default async function handler(req, res) {
     }
     
     // Update Tamagotchi record with day data and OMG moments
-    await base('Tamagotchi').update([
+    await tamagotchiTable.update([
       {
         id: tamagotchi.id,
         fields: updateFields
@@ -188,10 +193,10 @@ export default async function handler(req, res) {
       todayHours: {
         juice: todayJuiceHours,
         jungle: todayJungleHours,
-        total: todayTotalHours
+        total: todayTotalHours,
       },
       dayOmgMoments,
-      daysWithOmgMoments: Array.from(daysWithOmgMoments)
+      daysWithOmgMoments: Array.from(daysWithOmgMoments),
     });
     
   } catch (error) {
